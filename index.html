@@ -694,40 +694,47 @@
             return item;
         }
 
-        // --- Drag & Drop System (FIXED) ---
+        // --- Drag & Drop System (FIXED for mobile) ---
         function handleDragStart(e, data, originalElement) {
-            e.preventDefault(); 
+            e.preventDefault();
+            e.stopPropagation();
+            
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
             // FIXED: Prevent scrolling during drag
             document.body.classList.add('no-scroll');
 
-            const ghost = originalElement.cloneNode(true);
-            ghost.classList.add('drag-ghost');
-            ghost.className = `drag-ghost ${data.colorObj.bg} shadow-lg flex items-center justify-center rounded-full text-white font-bold`; 
+            const ghost = document.createElement('div');
+            ghost.className = `drag-ghost ${data.colorObj.bg} shadow-lg flex items-center justify-center rounded-full text-white font-bold border-2`; 
             ghost.style.left = clientX + 'px';
             ghost.style.top = clientY + 'px';
-            ghost.style.fontSize = "0.9rem";
+            ghost.style.width = '2rem';
+            ghost.style.height = '2rem';
+            ghost.style.fontSize = '0.9rem';
             // FIXED: Explicitly set transform for proper centering
             ghost.style.transform = 'translate(-50%, -50%)';
+            ghost.innerHTML = `<span class="pointer-events-none">${data.val}</span>`;
 
             document.body.appendChild(ghost);
-            originalElement.style.opacity = '0';
+            originalElement.style.opacity = '0.3';
 
             state.dragItem = { ...data, element: originalElement };
             state.dragGhost = ghost;
             playSound('pop');
 
-            window.addEventListener('mousemove', handleDragMove, {passive: false});
-            window.addEventListener('touchmove', handleDragMove, {passive: false});
-            window.addEventListener('mouseup', handleDragEnd);
-            window.addEventListener('touchend', handleDragEnd);
+            // Use passive: false to prevent scrolling
+            document.addEventListener('mousemove', handleDragMove, {passive: false});
+            document.addEventListener('touchmove', handleDragMove, {passive: false});
+            document.addEventListener('mouseup', handleDragEnd, {passive: false});
+            document.addEventListener('touchend', handleDragEnd, {passive: false});
         }
 
         function handleDragMove(e) {
             if (!state.dragGhost) return;
             e.preventDefault();
+            e.stopPropagation();
+            
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             state.dragGhost.style.left = clientX + 'px';
@@ -737,20 +744,30 @@
         function handleDragEnd(e) {
             if (!state.dragGhost) return;
 
+            e.preventDefault();
+            e.stopPropagation();
+
             // FIXED: Re-enable scrolling
             document.body.classList.remove('no-scroll');
 
-            window.removeEventListener('mousemove', handleDragMove);
-            window.removeEventListener('touchmove', handleDragMove);
-            window.removeEventListener('mouseup', handleDragEnd);
-            window.removeEventListener('touchend', handleDragEnd);
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('touchmove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchend', handleDragEnd);
 
-            const ghostRect = state.dragGhost.getBoundingClientRect();
-            const x = ghostRect.left + ghostRect.width / 2;
-            const y = ghostRect.top + ghostRect.height / 2;
+            // Get position from touch or mouse
+            let clientX, clientY;
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else {
+                const ghostRect = state.dragGhost.getBoundingClientRect();
+                clientX = ghostRect.left + ghostRect.width / 2;
+                clientY = ghostRect.top + ghostRect.height / 2;
+            }
             
             state.dragGhost.style.display = 'none';
-            const elemBelow = document.elementFromPoint(x, y);
+            const elemBelow = document.elementFromPoint(clientX, clientY);
             const dropZone = elemBelow ? elemBelow.closest('[data-qid]') : null;
             
             let success = false;
