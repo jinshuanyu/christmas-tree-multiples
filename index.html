@@ -671,8 +671,8 @@
         
         function createTrayItem(a) {
             const item = document.createElement('div');
-            // Basic classes
-            let classes = `tray-item rounded-full flex items-center justify-center cursor-grab border-2 transition-transform select-none relative touch-none`;
+            // Basic classes - 加強 touch-action
+            let classes = `tray-item rounded-full flex items-center justify-center cursor-grab border-2 transition-transform select-none relative`;
             
             if (a.matched) {
                 classes += ` opacity-0 pointer-events-none`;
@@ -681,92 +681,109 @@
             }
             
             item.className = classes;
+            item.style.touchAction = 'none'; // 關鍵！防止瀏覽器預設行為
             
             if (!a.matched) {
                 item.innerHTML = `
                     <div class="absolute top-1 left-2 w-1.5 h-1 bg-white/40 rounded-full blur-[1px]"></div>
                     <span class="text-white font-bold drop-shadow-md pointer-events-none">${a.val}</span>
                 `;
+                
+                // 分開處理 mouse 和 touch
                 item.addEventListener('mousedown', (e) => handleDragStart(e, a, item));
-                item.addEventListener('touchstart', (e) => handleDragStart(e, a, item), {passive: false});
+                item.addEventListener('touchstart', (e) => handleDragStart(e, a, item), {passive: true});
             }
             
             return item;
         }
 
-        // --- Drag & Drop System (FIXED for mobile) ---
+        // --- Drag & Drop System (完全重寫) ---
+        let isDragging = false;
+        
         function handleDragStart(e, data, originalElement) {
-            e.preventDefault();
-            e.stopPropagation();
+            if (isDragging) return;
+            isDragging = true;
+            
+            // 不要在 touchstart 時 preventDefault，否則會干擾 touch 事件
+            if (e.type === 'mousedown') {
+                e.preventDefault();
+            }
             
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-            // FIXED: Prevent scrolling during drag
-            document.body.classList.add('no-scroll');
-
+            // 創建 ghost
             const ghost = document.createElement('div');
-            ghost.className = `drag-ghost ${data.colorObj.bg} shadow-lg flex items-center justify-center rounded-full text-white font-bold border-2`; 
+            ghost.className = `fixed rounded-full flex items-center justify-center text-white font-bold border-2 ${data.colorObj.bg} shadow-lg`;
             ghost.style.left = clientX + 'px';
             ghost.style.top = clientY + 'px';
-            ghost.style.width = '2rem';
-            ghost.style.height = '2rem';
-            ghost.style.fontSize = '0.9rem';
-            // FIXED: Explicitly set transform for proper centering
+            ghost.style.width = '2.5rem';
+            ghost.style.height = '2.5rem';
+            ghost.style.fontSize = '1rem';
             ghost.style.transform = 'translate(-50%, -50%)';
-            ghost.innerHTML = `<span class="pointer-events-none">${data.val}</span>`;
+            ghost.style.pointerEvents = 'none'; // 關鍵！
+            ghost.style.zIndex = '9999';
+            ghost.innerHTML = `<span>${data.val}</span>`;
 
             document.body.appendChild(ghost);
+            document.body.style.overflow = 'hidden'; // 防止滾動
             originalElement.style.opacity = '0.3';
 
             state.dragItem = { ...data, element: originalElement };
             state.dragGhost = ghost;
             playSound('pop');
 
-            // Use passive: false to prevent scrolling
-            document.addEventListener('mousemove', handleDragMove, {passive: false});
-            document.addEventListener('touchmove', handleDragMove, {passive: false});
-            document.addEventListener('mouseup', handleDragEnd, {passive: false});
-            document.addEventListener('touchend', handleDragEnd, {passive: false});
+            // 綁定移動和結束事件
+            if (e.type === 'mousedown') {
+                document.addEventListener('mousemove', handleDragMove);
+                document.addEventListener('mouseup', handleDragEnd);
+            } else {
+                document.addEventListener('touchmove', handleDragMove, {passive: false});
+                document.addEventListener('touchend', handleDragEnd);
+                document.addEventListener('touchcancel', handleDragEnd);
+            }
         }
 
         function handleDragMove(e) {
-            if (!state.dragGhost) return;
-            e.preventDefault();
-            e.stopPropagation();
+            if (!state.dragGhost || !isDragging) return;
+            
+            // 在 touchmove 時才 preventDefault
+            if (e.type === 'touchmove') {
+                e.preventDefault();
+            }
             
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
             state.dragGhost.style.left = clientX + 'px';
             state.dragGhost.style.top = clientY + 'px';
         }
 
         function handleDragEnd(e) {
-            if (!state.dragGhost) return;
+            if (!state.dragGhost || !isDragging) return;
 
-            e.preventDefault();
-            e.stopPropagation();
+            isDragging = false;
+            document.body.style.overflow = ''; // 恢復滾動
 
-            // FIXED: Re-enable scrolling
-            document.body.classList.remove('no-scroll');
-
+            // 移除所有監聽器
             document.removeEventListener('mousemove', handleDragMove);
-            document.removeEventListener('touchmove', handleDragMove);
             document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchmove', handleDragMove);
             document.removeEventListener('touchend', handleDragEnd);
+            document.removeEventListener('touchcancel', handleDragEnd);
 
-            // Get position from touch or mouse
+            // 獲取最終位置
             let clientX, clientY;
             if (e.changedTouches && e.changedTouches.length > 0) {
                 clientX = e.changedTouches[0].clientX;
                 clientY = e.changedTouches[0].clientY;
             } else {
-                const ghostRect = state.dragGhost.getBoundingClientRect();
-                clientX = ghostRect.left + ghostRect.width / 2;
-                clientY = ghostRect.top + ghostRect.height / 2;
+                const rect = state.dragGhost.getBoundingClientRect();
+                clientX = rect.left + rect.width / 2;
+                clientY = rect.top + rect.height / 2;
             }
             
-            state.dragGhost.style.display = 'none';
+            // 檢查碰撞
             const elemBelow = document.elementFromPoint(clientX, clientY);
             const dropZone = elemBelow ? elemBelow.closest('[data-qid]') : null;
             
@@ -784,12 +801,12 @@
                 }
             }
 
-            if (success) {
-                state.dragGhost.remove();
-            } else {
-                state.dragGhost.remove();
+            // 清理
+            state.dragGhost.remove();
+            if (!success) {
                 state.dragItem.element.style.opacity = '1';
             }
+            
             state.dragGhost = null;
             state.dragItem = null;
         }
