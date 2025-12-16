@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>聖誕樹乘法遊戲 (Christmas Math Tree)</title>
+    
+    <!-- 引入 Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for footer icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'PingFang TC', '"Microsoft JhengHei"', 'Heiti TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        @keyframes bounceShort {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes snowFall {
+            0% { transform: translateY(-10vh) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(110vh) translateX(20px); opacity: 0.3; }
+        }
+        
+        .animate-bounce-short { animation: bounceShort 0.5s ease-in-out; }
+        .animate-spin-slow { animation: spinSlow 3s linear infinite; }
+        
+        /* Star Glow Effect */
+        .star-glow {
+            filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.8));
+        }
+
+        .snow-flake {
+            position: absolute;
+            color: white;
+            opacity: 0.6;
+            animation-name: snowFall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Prevent scrolling while dragging on mobile - FIXED */
+        .no-scroll {
+            overflow: hidden;
+            touch-action: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Draggable Ghost Style - FIXED positioning */
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            width: 2rem; 
+            height: 2rem; 
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            font-size: 0.8rem;
+            border-width: 2px;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        /* Tray Item Sizing */
+        .tray-item {
+            width: 2rem; 
+            height: 2rem;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        @media (min-width: 768px) {
+            .tray-item {
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 1rem;
+            }
+        }
+        
+        /* Side Tray Scrollbar Hide */
+        .side-tray::-webkit-scrollbar {
+            display: none;
+        }
+        .side-tray {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white font-sans h-screen w-screen overflow-hidden select-none flex flex-col">
+
+    <!-- Background Snow: z-50 to be above BG but pointer-events-none prevents blocking -->
+    <div id="snow-container" class="absolute inset-0 pointer-events-none z-50"></div>
+
+    <!-- UI Header -->
+    <div class="absolute top-2 left-4 right-4 flex justify-between items-center z-50 h-10">
+        <button id="btn-back" class="hidden p-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-sm transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        </button>
+        <div class="flex-1"></div>
+        <button id="btn-sound" class="p-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-sm transition">
+            <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            <svg id="icon-sound-off" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+        </button>
+    </div>
+
+    <!-- SCREEN: MENU -->
+    <div id="screen-menu" class="absolute inset-0 z-40 flex flex-col items-center justify-center p-6 transition-opacity duration-300">
+        <!-- Title Smaller -->
+        <h1 class="text-3xl md:text-4xl font-bold mb-2 text-green-400 drop-shadow-lg font-serif text-center" style="font-family: 'Noto Sans TC', sans-serif;">聖誕樹乘法遊戲</h1>
+        <p class="text-base text-slate-300 mb-8 text-center">拖曳正確答案裝飾聖誕樹！</p>
+        
+        <div class="bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-slate-700 w-full max-w-md">
+            <h2 class="text-lg font-semibold mb-4 text-center">選擇乘法表</h2>
+            <div id="level-grid" class="grid grid-cols-3 gap-3">
+                <!-- Buttons injected by JS -->
+            </div>
+        </div>
+        
+        <!-- Footer for menu screen -->
+        <footer class="mt-8 text-center text-sm text-slate-400">
+            <div class="mt-2 text-xs text-slate-500">
+                © 2025 Christina Yu. All rights reserved.
+            </div>
+            <div class="mt-2 text-xs text-slate-500">
+                <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
+                <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
+                <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- SCREEN: GAME -->
+    <div id="screen-game" class="absolute inset-0 z-30 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-hidden">
+        
+        <!-- Game Container with STRICT height limit -->
+        <div class="w-full max-w-[600px] flex flex-col" style="height: 480px;">
+        
+        <!-- Header Spacer -->
+        <div class="h-4 shrink-0 w-full"></div>
+
+        <!-- Level Badge -->
+        <div class="shrink-0 flex justify-center mb-1 w-full">
+            <div class="bg-slate-800/50 backdrop-blur rounded-full px-3 py-0.5 border border-slate-600">
+                <span id="level-display" class="text-green-300 font-bold text-xs">等級</span>
+            </div>
+        </div>
+
+        <!-- Main Game Area - FIXED HEIGHT -->
+        <div class="w-full flex flex-row items-start justify-between relative" style="height: 420px;">
+            
+            <!-- LEFT TRAY -->
+            <div id="tray-left" class="side-tray w-12 md:w-14 flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto" style="height: 100%;">
+                <!-- Left ornaments injected by JS -->
+            </div>
+
+            <!-- TREE CONTAINER -->
+            <div class="flex-1 flex items-center justify-center relative min-w-0" style="height: 100%;">
+                <!-- Tree with controlled size -->
+                <div class="relative flex justify-center items-center select-none" id="tree-container" style="width: 280px; height: 336px;">
+                    <!-- SVG Tree -->
+                    <svg viewBox="0 0 200 240" class="w-full h-full drop-shadow-2xl absolute inset-0">
+                        <!-- Trunk (Thicker) -->
+                        <rect x="85" y="200" width="30" height="40" fill="#5D4037" />
+                        
+                        <!-- Large Triangle (Bottom Layer) -->
+                        <path d="M100 110 L5 210 L195 210 Z" fill="#166534" /> 
+                        
+                        <!-- Medium Triangle (Middle Layer) -->
+                        <path d="M100 60 L25 150 L175 150 Z" fill="#15803d" />
+                        
+                        <!-- Small Triangle (Top Layer) -->
+                        <path d="M100 20 L45 90 L155 90 Z" fill="#16a34a" />
+                        <!-- Star with Glow -->
+                        <path transform="translate(100, 20) scale(0.8)" d="M0 -15 L4 -5 L15 -5 L6 2 L9 13 L0 7 L-9 13 L-6 2 L-15 -5 L-4 -5 Z" fill="#FACC15" class="star-glow" />
+                    </svg>
+
+                    <!-- Drop Zones -->
+                    <div id="drop-zones" class="absolute inset-0 w-full h-full"></div>
+                </div>
+            </div>
+
+            <!-- RIGHT TRAY -->
+            <div id="tray-right" class="side-tray w-12 md:w-14 flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto" style="height: 100%;">
+                <!-- Right ornaments injected by JS -->
+            </div>
+        </div>
+        
+        <!-- Win Message Overlay -->
+        <div id="msg-all-clear" class="absolute top-2 left-0 right-0 text-green-400 font-bold animate-pulse text-lg text-center hidden pointer-events-none drop-shadow-lg bg-black/50 py-1 backdrop-blur-sm z-50">
+            完成！(All Clear!)
+        </div>
+        
+        </div><!-- Close game container -->
+        
+        <!-- Footer - OUTSIDE game container -->
+        <footer class="mt-4 text-center text-sm text-slate-400">
+            <div class="mt-2 text-xs text-slate-500">
+                © 2025 Christina Yu. All rights reserved.
+            </div>
+            <div class="mt-2 text-xs text-slate-500">
+                <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
+                <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
+                <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+            </div>
+        </footer>
+        
+    </div>
+
+    <!-- SCREEN: WIN -->
+    <div id="screen-win" class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center text-center p-8 hidden animate-fade-in">
+        <div class="mb-6 animate-bounce">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="#FACC15" stroke="#EAB308" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <h2 class="text-5xl font-bold text-white mb-4">聖誕快樂！</h2>
+        <p class="text-2xl text-green-300 mb-8">聖誕樹好漂亮！</p>
+        <button id="btn-replay" class="bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-8 rounded-full text-xl shadow-xl flex items-center gap-3 transition-transform hover:scale-105 mb-8">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            再玩一次
+        </button>
+        
+        <!-- Footer for win screen -->
+        <footer class="text-center text-sm text-slate-400">
+            <div class="mt-2 text-xs text-slate-500">
+                © 2025 Christina Yu. All rights reserved.
+            </div>
+            <div class="mt-2 text-xs text-slate-500">
+                <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
+                <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
+                <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Logic -->
+    <script>
+        // --- Game Data & State ---
+        const state = {
+            screen: 'menu', 
+            level: null,
+            questions: [],
+            answers: [],
+            soundEnabled: true,
+            dragItem: null, 
+            dragGhost: null,
+            musicPlaying: false
+        };
+
+        // Red, Orange, Yellow, Blue, Purple
+        const colorPalette = [
+            { 
+                name: 'red', 
+                bg: 'bg-gradient-to-br from-red-500 to-red-700 border-red-400', 
+                lit: 'bg-gradient-to-br from-red-400 to-red-600 shadow-[0_0_20px_rgba(248,113,113,0.9)]' 
+            },
+            { 
+                name: 'orange', 
+                bg: 'bg-gradient-to-br from-orange-500 to-orange-700 border-orange-400', 
+                lit: 'bg-gradient-to-br from-orange-400 to-orange-600 shadow-[0_0_20px_rgba(251,146,60,0.9)]' 
+            },
+            { 
+                name: 'yellow', 
+                bg: 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-300', 
+                lit: 'bg-gradient-to-br from-yellow-300 to-yellow-500 shadow-[0_0_20px_rgba(250,204,21,0.9)]' 
+            },
+            { 
+                name: 'blue', 
+                bg: 'bg-gradient-to-br from-blue-500 to-blue-700 border-blue-400', 
+                lit: 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_20px_rgba(96,165,250,0.9)]' 
+            },
+            {
+                name: 'purple',
+                bg: 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-400',
+                lit: 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-[0_0_20px_rgba(192,132,252,0.9)]'
+            }
+        ];
+
+        // Positions on Tree (Percentages)
+        const optimalPositions = [
+            { x: 50, y: 20 }, // Row 1 (Top)
+            { x: 36, y: 40 }, { x: 64, y: 40 }, // Row 2
+            { x: 25, y: 60 }, { x: 50, y: 58 }, { x: 75, y: 60 }, // Row 3
+            { x: 18, y: 81 }, { x: 39, y: 81 }, { x: 61, y: 81 }, { x: 82, y: 81 } // Row 4 (Base)
+        ];
+
+        // --- Audio System ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let bgmInterval = null;
+        let bgmNoteIndex = 0;
+
+        // Jingle Bells Melody (Note, Duration in ms)
+        // C5=523, D5=587, E5=659, F5=698, G5=784
+        const melody = [
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50}, // E E E
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50}, // E E E
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 784, d: 200}, {f: 0, d: 50}, {f: 523, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 659, d: 800}, {f: 0, d: 100}, // E G C D E
+            {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, // F F F F
+            {f: 698, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, // F E E E 
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 587, d: 400}, {f: 0, d: 50}, {f: 784, d: 400}, {f: 0, d: 400} // E D D E D G
+        ];
+
+        function playTone(freq, duration) {
+            if (!state.soundEnabled || freq === 0) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.value = 0.03; // Very quiet BGM
+            
+            // Soft envelope
+            gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration/1000);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration/1000);
+        }
+
+        function playNextNote() {
+            if (!state.musicPlaying || !state.soundEnabled) return;
+            
+            const note = melody[bgmNoteIndex];
+            playTone(note.f, note.d);
+            
+            bgmNoteIndex = (bgmNoteIndex + 1) % melody.length;
+            bgmInterval = setTimeout(playNextNote, note.d);
+        }
+
+        function startMusic() {
+            if (state.musicPlaying) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            state.musicPlaying = true;
+            bgmNoteIndex = 0;
+            playNextNote();
+        }
+
+        function stopMusic() {
+            state.musicPlaying = false;
+            clearTimeout(bgmInterval);
+        }
+
+        // FIXED: Toggle sound properly resets music state
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            document.getElementById('icon-sound-on').style.display = state.soundEnabled ? 'block' : 'none';
+            document.getElementById('icon-sound-off').style.display = state.soundEnabled ? 'none' : 'block';
+            
+            if (state.soundEnabled) {
+                state.musicPlaying = false; // Reset state before starting
+                startMusic();
+            } else {
+                stopMusic();
+                state.musicPlaying = false; // Ensure state is reset
+            }
+        }
+        
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'success') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+
+                const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
+                osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                osc2.type = 'sine'; osc2.frequency.setValueAtTime(659.25, now + 0.1);
+                gain2.gain.setValueAtTime(0.1, now + 0.1); gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc2.start(now + 0.1); osc2.stop(now + 0.6);
+
+                const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain();
+                osc3.connect(gain3); gain3.connect(audioCtx.destination);
+                osc3.type = 'triangle'; osc3.frequency.setValueAtTime(783.99, now + 0.2);
+                gain3.gain.setValueAtTime(0.08, now + 0.2); gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                osc3.start(now + 0.2); osc3.stop(now + 0.8);
+
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'pop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            }
+        }
+
+        // --- Init ---
+        function init() {
+            createSnow();
+            createMenu();
+            document.getElementById('btn-sound').addEventListener('click', toggleSound);
+            document.getElementById('btn-back').addEventListener('click', showMenu);
+            document.getElementById('btn-replay').addEventListener('click', showMenu);
+            
+            // Try to start music on first interaction
+            document.body.addEventListener('click', () => {
+                if(state.soundEnabled && !state.musicPlaying) {
+                    startMusic();
+                }
+            }, { once: true });
+        }
+
+        function createSnow() {
+            const container = document.getElementById('snow-container');
+            for(let i=0; i<20; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snow-flake';
+                flake.innerText = '❄';
+                flake.style.left = Math.random() * 100 + '%';
+                flake.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                // Slowed down snow speed: 10s to 20s
+                flake.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                flake.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(flake);
+            }
+        }
+
+        function createMenu() {
+            const grid = document.getElementById('level-grid');
+            grid.innerHTML = '';
+            // 2 to 10
+            [2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = "bg-red-600 hover:bg-red-500 active:scale-95 transition-all text-white font-bold py-3 px-4 rounded-xl shadow-lg text-xl border-b-4 border-red-800";
+                btn.innerText = num + '×';
+                btn.onclick = () => startGame(num);
+                grid.appendChild(btn);
+            });
+            const mixBtn = document.createElement('button');
+            mixBtn.className = "col-span-3 bg-green-600 hover:bg-green-500 active:scale-95 transition-all text-white font-bold py-3 px-4 rounded-xl shadow-lg text-xl border-b-4 border-green-800 flex items-center justify-center gap-2 mt-2";
+            mixBtn.innerHTML = `綜合挑戰`; 
+            mixBtn.onclick = () => startGame('mixed');
+            grid.appendChild(mixBtn);
+        }
+
+        function switchScreen(screenName) {
+            state.screen = screenName;
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-win').classList.add('hidden');
+            document.getElementById('btn-back').classList.add('hidden');
+
+            const target = document.getElementById(`screen-${screenName}`);
+            target.classList.remove('hidden');
+            void target.offsetWidth; 
+            target.classList.remove('opacity-0');
+            
+            if(screenName === 'game') {
+                document.getElementById('btn-back').classList.remove('hidden');
+            }
+        }
+
+        function showMenu() {
+            switchScreen('menu');
+        }
+
+        function startGame(level) {
+            state.level = level;
+            let selectedQuestions = [];
+
+            if (level === 'mixed') {
+                // Balanced Mixed Mode: Ensure at least one question from each table (2-9)
+                const tables = [2, 3, 4, 5, 6, 7, 8, 9];
+                let used = new Set();
+
+                tables.forEach(t => {
+                    const n2 = Math.floor(Math.random() * 10) + 1; 
+                    selectedQuestions.push({n1: t, n2: n2});
+                    used.add(`${t}-${n2}`);
+                });
+
+                let remainingPool = [];
+                for(let i=2; i<=9; i++) {
+                    for(let j=1; j<=10; j++) {
+                        if (!used.has(`${i}-${j}`)) {
+                            remainingPool.push({n1: i, n2: j});
+                        }
+                    }
+                }
+                
+                remainingPool.sort(() => Math.random() - 0.5);
+                selectedQuestions.push(...remainingPool.slice(0, 2));
+                selectedQuestions.sort(() => Math.random() - 0.5);
+
+            } else {
+                let pool = [];
+                for(let i=1; i<=10; i++) pool.push({n1:level, n2:i});
+                pool.sort(() => Math.random() - 0.5);
+                selectedQuestions = pool.slice(0, 10);
+            }
+
+            const positions = [...optimalPositions].sort(() => Math.random() - 0.5);
+
+            state.questions = selectedQuestions.map((q, idx) => ({
+                id: `q-${idx}`,
+                n1: q.n1, n2: q.n2, ans: q.n1 * q.n2,
+                solved: false, x: positions[idx].x, y: positions[idx].y,
+                solvedColorObj: null 
+            }));
+
+            let colorAssignments = [];
+            colorPalette.forEach(c => {
+                colorAssignments.push(c);
+                colorAssignments.push(c);
+            });
+            colorAssignments.sort(() => Math.random() - 0.5);
+
+            state.answers = state.questions.map((q, idx) => ({
+                id: `a-${q.id}`, 
+                val: q.ans, 
+                matched: false,
+                colorObj: colorAssignments[idx]
+            })).sort(() => Math.random() - 0.5);
+
+            renderLevel();
+            switchScreen('game');
+        }
+
+        function renderLevel() {
+            document.getElementById('level-display').innerText = state.level === 'mixed' ? '綜合挑戰' : state.level + ' 的乘法表';
+            
+            const dropContainer = document.getElementById('drop-zones');
+            dropContainer.innerHTML = '';
+            
+            state.questions.forEach(q => {
+                const zone = document.createElement('div');
+                zone.dataset.qid = q.id;
+                zone.className = `absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500`;
+                zone.style.left = q.x + '%';
+                zone.style.top = q.y + '%';
+                updateZoneVisuals(zone, q);
+                dropContainer.appendChild(zone);
+            });
+
+            renderTray();
+        }
+
+        function updateZoneVisuals(zoneElement, questionData) {
+            const isSolved = questionData.solved;
+            zoneElement.className = `absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${isSolved ? 'scale-100 z-10' : 'scale-100 z-0'}`;
+            
+            // Match Question Bubble Size to Tray Items (2rem/32px mobile, 2.5rem/40px desktop)
+            const baseClasses = "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors duration-500";
+            
+            // Unsolved: Clean look, no border, no shadow
+            let solvedClasses = "bg-slate-800/80"; 
+            let content = `<span class="text-[0.65rem] md:text-xs font-bold text-white whitespace-nowrap">${questionData.n1}×${questionData.n2}</span>`;
+            
+            // Solved: Bright color
+            if (isSolved) {
+                if (questionData.solvedColorObj) {
+                    solvedClasses = `text-white ${questionData.solvedColorObj.lit}`;
+                } else {
+                    solvedClasses = "bg-yellow-100 shadow-[0_0_20px_rgba(250,204,21,0.8)]";
+                }
+                
+                content = `
+                    <div class="text-center animate-bounce-short relative flex items-center justify-center w-full h-full">
+                        <span class="text-xs md:text-base font-bold text-white leading-none drop-shadow-md">${questionData.ans}</span>
+                        <svg class="absolute -top-1 -right-1 text-white w-3 h-3 animate-spin-slow" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
+                    </div>`;
+            }
+            
+            zoneElement.innerHTML = `
+                <div class="${baseClasses} ${solvedClasses}">
+                    ${content}
+                </div>
+            `;
+        }
+
+        function renderTray() {
+            const leftTray = document.getElementById('tray-left');
+            const rightTray = document.getElementById('tray-right');
+            
+            leftTray.innerHTML = '';
+            rightTray.innerHTML = '';
+            
+            const allMatched = state.answers.every(a => a.matched);
+            if (allMatched) {
+                document.getElementById('msg-all-clear').classList.remove('hidden');
+                return;
+            } else {
+                document.getElementById('msg-all-clear').classList.add('hidden');
+            }
+
+            state.answers.forEach((a, index) => {
+                const item = createTrayItem(a);
+                if (index % 2 === 0) {
+                    leftTray.appendChild(item);
+                } else {
+                    rightTray.appendChild(item);
+                }
+            });
+        }
+        
+        function createTrayItem(a) {
+            const item = document.createElement('div');
+            // Basic classes
+            let classes = `tray-item rounded-full flex items-center justify-center cursor-grab border-2 transition-transform select-none relative touch-none`;
+            
+            if (a.matched) {
+                classes += ` opacity-0 pointer-events-none`;
+            } else {
+                classes += ` ${a.colorObj.bg} shadow-lg hover:scale-110`;
+            }
+            
+            item.className = classes;
+            
+            if (!a.matched) {
+                item.innerHTML = `
+                    <div class="absolute top-1 left-2 w-1.5 h-1 bg-white/40 rounded-full blur-[1px]"></div>
+                    <span class="text-white font-bold drop-shadow-md pointer-events-none">${a.val}</span>
+                `;
+                item.addEventListener('mousedown', (e) => handleDragStart(e, a, item));
+                item.addEventListener('touchstart', (e) => handleDragStart(e, a, item), {passive: false});
+            }
+            
+            return item;
+        }
+
+        // --- Drag & Drop System (FIXED) ---
+        function handleDragStart(e, data, originalElement) {
+            e.preventDefault(); 
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // FIXED: Prevent scrolling during drag
+            document.body.classList.add('no-scroll');
+
+            const ghost = originalElement.cloneNode(true);
+            ghost.classList.add('drag-ghost');
+            ghost.className = `drag-ghost ${data.colorObj.bg} shadow-lg flex items-center justify-center rounded-full text-white font-bold`; 
+            ghost.style.left = clientX + 'px';
+            ghost.style.top = clientY + 'px';
+            ghost.style.fontSize = "0.9rem";
+            // FIXED: Explicitly set transform for proper centering
+            ghost.style.transform = 'translate(-50%, -50%)';
+
+            document.body.appendChild(ghost);
+            originalElement.style.opacity = '0';
+
+            state.dragItem = { ...data, element: originalElement };
+            state.dragGhost = ghost;
+            playSound('pop');
+
+            window.addEventListener('mousemove', handleDragMove, {passive: false});
+            window.addEventListener('touchmove', handleDragMove, {passive: false});
+            window.addEventListener('mouseup', handleDragEnd);
+            window.addEventListener('touchend', handleDragEnd);
+        }
+
+        function handleDragMove(e) {
+            if (!state.dragGhost) return;
+            e.preventDefault();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            state.dragGhost.style.left = clientX + 'px';
+            state.dragGhost.style.top = clientY + 'px';
+        }
+
+        function handleDragEnd(e) {
+            if (!state.dragGhost) return;
+
+            // FIXED: Re-enable scrolling
+            document.body.classList.remove('no-scroll');
+
+            window.removeEventListener('mousemove', handleDragMove);
+            window.removeEventListener('touchmove', handleDragMove);
+            window.removeEventListener('mouseup', handleDragEnd);
+            window.removeEventListener('touchend', handleDragEnd);
+
+            const ghostRect = state.dragGhost.getBoundingClientRect();
+            const x = ghostRect.left + ghostRect.width / 2;
+            const y = ghostRect.top + ghostRect.height / 2;
+            
+            state.dragGhost.style.display = 'none';
+            const elemBelow = document.elementFromPoint(x, y);
+            const dropZone = elemBelow ? elemBelow.closest('[data-qid]') : null;
+            
+            let success = false;
+            if (dropZone) {
+                const qId = dropZone.dataset.qid;
+                const question = state.questions.find(q => q.id === qId);
+                if (question && !question.solved) {
+                    if (question.ans === state.dragItem.val) {
+                        success = true;
+                        handleSuccess(question, dropZone);
+                    } else {
+                        playSound('error');
+                    }
+                }
+            }
+
+            if (success) {
+                state.dragGhost.remove();
+            } else {
+                state.dragGhost.remove();
+                state.dragItem.element.style.opacity = '1';
+            }
+            state.dragGhost = null;
+            state.dragItem = null;
+        }
+
+        function handleSuccess(question, dropZoneElement) {
+            playSound('success');
+            question.solved = true;
+            
+            question.solvedColorObj = state.dragItem.colorObj;
+
+            const ansObj = state.answers.find(a => a.id === state.dragItem.id);
+            if (ansObj) ansObj.matched = true;
+            
+            updateZoneVisuals(dropZoneElement, question);
+            renderTray(); 
+            
+            if (state.questions.every(q => q.solved)) {
+                setTimeout(() => switchScreen('win'), 1000);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
