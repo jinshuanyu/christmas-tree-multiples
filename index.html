@@ -51,6 +51,36 @@
         .animate-bounce-short { animation: bounceShort 0.5s ease-in-out; }
         .animate-spin-slow { animation: spinSlow 3s linear infinite; }
         
+        /* Responsive Game Container Heights */
+        .game-container {
+            height: 100%;
+        }
+        .game-main-area {
+            flex: 1;
+            min-height: 0;
+        }
+        .tree-container-wrapper {
+            width: 100%;
+            aspect-ratio: 200 / 240;
+            max-height: 100%;
+        }
+        
+        /* Desktop only: limit height */
+        @media (min-width: 1024px) {
+            .game-container {
+                height: 480px;
+            }
+            .game-main-area {
+                height: 420px;
+                flex: none;
+            }
+            .tree-container-wrapper {
+                width: 280px;
+                height: 336px;
+                aspect-ratio: unset;
+            }
+        }
+        
         /* Star Glow Effect */
         .star-glow {
             filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.8));
@@ -167,8 +197,8 @@
     <!-- SCREEN: GAME -->
     <div id="screen-game" class="absolute inset-0 z-30 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-hidden">
         
-        <!-- Game Container with STRICT height limit -->
-        <div class="w-full max-w-[600px] flex flex-col" style="height: 480px;">
+        <!-- Game Container with responsive height -->
+        <div class="game-container w-full max-w-[600px] flex flex-col">
         
         <!-- Header Spacer -->
         <div class="h-4 shrink-0 w-full"></div>
@@ -180,18 +210,18 @@
             </div>
         </div>
 
-        <!-- Main Game Area - FIXED HEIGHT -->
-        <div class="w-full flex flex-row items-start justify-between relative" style="height: 420px;">
+        <!-- Main Game Area - Responsive -->
+        <div class="game-main-area w-full flex flex-row items-start justify-between relative">
             
             <!-- LEFT TRAY -->
-            <div id="tray-left" class="side-tray w-12 md:w-14 flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto" style="height: 100%;">
+            <div id="tray-left" class="side-tray w-12 md:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
                 <!-- Left ornaments injected by JS -->
             </div>
 
             <!-- TREE CONTAINER -->
-            <div class="flex-1 flex items-center justify-center relative min-w-0" style="height: 100%;">
-                <!-- Tree with controlled size -->
-                <div class="relative flex justify-center items-center select-none" id="tree-container" style="width: 280px; height: 336px;">
+            <div class="flex-1 h-full flex items-center justify-center relative min-w-0">
+                <!-- Tree with responsive size -->
+                <div class="tree-container-wrapper relative flex justify-center items-center select-none" id="tree-container">
                     <!-- SVG Tree -->
                     <svg viewBox="0 0 200 240" class="w-full h-full drop-shadow-2xl absolute inset-0">
                         <!-- Trunk (Thicker) -->
@@ -215,7 +245,7 @@
             </div>
 
             <!-- RIGHT TRAY -->
-            <div id="tray-right" class="side-tray w-12 md:w-14 flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto" style="height: 100%;">
+            <div id="tray-right" class="side-tray w-12 md:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
                 <!-- Right ornaments injected by JS -->
             </div>
         </div>
