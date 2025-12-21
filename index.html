@@ -5,15 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>聖誕樹乘法遊戲 (Christmas Math Tree)</title>
     
-    <!-- 引入 Noto Sans TC -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Font Awesome for footer icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <script>
@@ -52,6 +49,7 @@
         .animate-spin-slow { animation: spinSlow 3s linear infinite; }
         
         /* Responsive Game Container Heights */
+        /* 手機版默認樣式 (< 500px) */
         .game-container {
             height: 100%;
         }
@@ -60,23 +58,26 @@
             min-height: 0;
         }
         .tree-container-wrapper {
-            width: 135%; /* 再放大一點 */
+            width: 135%; /* 手機版放大 */
             max-width: 135%;
             aspect-ratio: 200 / 240;
             max-height: 95%;
         }
         
-        /* Desktop only: limit height */
-        @media (min-width: 1024px) {
+        /* Critical Point: 500px 
+           只要大於 500px (包含平板直式、橫式、桌機)，全部強制使用「桌機版面」
+           這樣平板直式就不會顯示滿版的大樹，而是顯示精緻的小樹
+        */
+        @media (min-width: 500px) {
             .game-container {
-                height: 480px;
+                height: 480px; /* 固定高度 */
             }
             .game-main-area {
                 height: 420px;
                 flex: none;
             }
             .tree-container-wrapper {
-                width: 280px;
+                width: 280px; /* 固定寬度 */
                 height: 336px;
                 aspect-ratio: unset;
                 max-height: unset;
@@ -100,7 +101,6 @@
             z-index: 100;
         }
 
-        /* Prevent scrolling while dragging on mobile - FIXED */
         .no-scroll {
             overflow: hidden;
             touch-action: none;
@@ -109,7 +109,6 @@
             height: 100%;
         }
 
-        /* Draggable Ghost Style - FIXED positioning */
         .drag-ghost {
             position: fixed;
             pointer-events: none;
@@ -129,21 +128,16 @@
             font-family: 'Noto Sans TC', sans-serif;
         }
 
-        /* Tray Item Sizing - 手機版再縮小一點 */
+        /* Tray Item Sizing */
         .tray-item {
             width: 2.5rem; 
             height: 2.5rem;
             font-size: 0.95rem;
             flex-shrink: 0;
         }
-        @media (min-width: 768px) {
-            .tray-item {
-                width: 2.5rem;
-                height: 2.5rem;
-                font-size: 1rem;
-            }
-        }
-        @media (min-width: 1024px) {
+        
+        /* 500px 以上就讓球體稍微大一點點 (符合桌機/平板舒適度) */
+        @media (min-width: 500px) {
             .tray-item {
                 width: 2.5rem;
                 height: 2.5rem;
@@ -151,7 +145,6 @@
             }
         }
         
-        /* Side Tray Scrollbar Hide */
         .side-tray::-webkit-scrollbar {
             display: none;
         }
@@ -163,10 +156,8 @@
 </head>
 <body class="bg-slate-900 text-white font-sans h-screen w-screen overflow-hidden select-none flex flex-col">
 
-    <!-- Background Snow: z-50 to be above BG but pointer-events-none prevents blocking -->
     <div id="snow-container" class="absolute inset-0 pointer-events-none z-50"></div>
 
-    <!-- UI Header -->
     <div class="absolute top-2 left-4 right-4 flex justify-between items-center z-50 h-10">
         <button id="btn-back" class="hidden p-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-sm transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
@@ -178,20 +169,16 @@
         </button>
     </div>
 
-    <!-- SCREEN: MENU -->
     <div id="screen-menu" class="absolute inset-0 z-40 flex flex-col items-center justify-center p-6 transition-opacity duration-300">
-        <!-- Title Smaller -->
         <h1 class="text-3xl md:text-4xl font-bold mb-2 text-green-400 drop-shadow-lg font-serif text-center" style="font-family: 'Noto Sans TC', sans-serif;">聖誕樹乘法遊戲</h1>
         <p class="text-base text-slate-300 mb-8 text-center">拖曳正確答案裝飾聖誕樹！</p>
         
         <div class="bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-slate-700 w-full max-w-md">
             <h2 class="text-lg font-semibold mb-4 text-center">選擇乘法表</h2>
             <div id="level-grid" class="grid grid-cols-3 gap-3">
-                <!-- Buttons injected by JS -->
-            </div>
+                </div>
         </div>
         
-        <!-- Footer for menu screen -->
         <footer class="mt-8 text-center text-sm text-slate-400">
             <div class="mt-2 text-xs text-slate-500">
                 © 2025 Christina Yu. All rights reserved.
@@ -204,71 +191,46 @@
         </footer>
     </div>
 
-    <!-- SCREEN: GAME -->
     <div id="screen-game" class="absolute inset-0 z-30 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-hidden">
         
-        <!-- Game Container with responsive height -->
         <div class="game-container w-full max-w-[600px] flex flex-col">
         
-        <!-- Header Spacer -->
         <div class="h-4 shrink-0 w-full"></div>
 
-        <!-- Level Badge -->
         <div class="shrink-0 flex justify-center mb-1 w-full">
             <div class="bg-slate-800/50 backdrop-blur rounded-full px-3 py-1 border border-slate-600">
-                <span id="level-display" class="text-green-300 font-bold text-sm md:text-xs">等級</span>
+                <span id="level-display" class="text-green-300 font-bold text-sm min-[500px]:text-sm">等級</span>
             </div>
         </div>
 
-        <!-- Main Game Area - Responsive -->
         <div class="game-main-area w-full flex flex-row items-start justify-between relative">
             
-            <!-- LEFT TRAY -->
-            <div id="tray-left" class="side-tray w-12 md:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
-                <!-- Left ornaments injected by JS -->
-            </div>
+            <div id="tray-left" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
+                </div>
 
-            <!-- TREE CONTAINER -->
             <div class="flex-1 h-full flex items-center justify-center relative min-w-0 px-1">
-                <!-- Tree with responsive size -->
                 <div class="tree-container-wrapper relative flex justify-center items-center select-none" id="tree-container" style="min-width: 0;">
-                    <!-- SVG Tree -->
                     <svg viewBox="0 0 200 240" class="w-full h-full drop-shadow-2xl">
-                        <!-- Trunk (Thicker) -->
                         <rect x="85" y="200" width="30" height="40" fill="#5D4037" />
-                        
-                        <!-- Large Triangle (Bottom Layer) -->
                         <path d="M100 110 L5 210 L195 210 Z" fill="#166534" /> 
-                        
-                        <!-- Medium Triangle (Middle Layer) -->
                         <path d="M100 60 L25 150 L175 150 Z" fill="#15803d" />
-                        
-                        <!-- Small Triangle (Top Layer) -->
                         <path d="M100 20 L45 90 L155 90 Z" fill="#16a34a" />
-                        <!-- Star with Glow -->
                         <path transform="translate(100, 20) scale(0.8)" d="M0 -15 L4 -5 L15 -5 L6 2 L9 13 L0 7 L-9 13 L-6 2 L-15 -5 L-4 -5 Z" fill="#FACC15" class="star-glow" />
                     </svg>
 
-                    <!-- Drop Zones -->
                     <div id="drop-zones" class="absolute inset-0 w-full h-full"></div>
                 </div>
             </div>
 
-            <!-- RIGHT TRAY -->
-            <div id="tray-right" class="side-tray w-12 md:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
-                <!-- Right ornaments injected by JS -->
-            </div>
+            <div id="tray-right" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
+                </div>
         </div>
         
-        <!-- Win Message Overlay -->
         <div id="msg-all-clear" class="absolute top-2 left-0 right-0 text-green-400 font-bold animate-pulse text-lg text-center hidden pointer-events-none drop-shadow-lg bg-black/50 py-1 backdrop-blur-sm z-50">
             完成！(All Clear!)
         </div>
         
-        </div><!-- Close game container -->
-        
-        <!-- Footer - OUTSIDE game container -->
-        <footer class="mt-4 text-center text-sm text-slate-400">
+        </div><footer class="mt-4 text-center text-sm text-slate-400">
             <div class="mt-2 text-xs text-slate-500">
                 © 2025 Christina Yu. All rights reserved.
             </div>
@@ -281,24 +243,20 @@
         
     </div>
 
-    <!-- SCREEN: WIN -->
     <div id="screen-win" class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center text-center p-8 hidden animate-fade-in">
         <div class="mb-6 animate-bounce">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="#FACC15" stroke="#EAB308" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
         
-        <!-- 從短到長排列 -->
         <p class="text-2xl text-green-300 mb-4">聖誕樹好漂亮！</p>
         <h2 class="text-5xl font-bold text-white mb-8">聖誕快樂！</h2>
         
-        <!-- 拉長拉扁的按鈕 - 前後都有循環符號 -->
         <button id="btn-replay" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-16 rounded-full text-lg shadow-xl flex items-center gap-3 transition-transform hover:scale-105 mb-8">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
             再玩一次
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
         </button>
         
-        <!-- Footer for win screen -->
         <footer class="text-center text-sm text-slate-400">
             <div class="mt-2 text-xs text-slate-500">
                 © 2025 Christina Yu. All rights reserved.
@@ -311,7 +269,6 @@
         </footer>
     </div>
 
-    <!-- Logic -->
     <script>
         // --- Game Data & State ---
         const state = {
@@ -325,7 +282,6 @@
             musicPlaying: false
         };
 
-        // Red, Orange, Yellow, Blue, Purple
         const colorPalette = [
             { 
                 name: 'red', 
@@ -367,8 +323,6 @@
         let bgmInterval = null;
         let bgmNoteIndex = 0;
 
-        // Jingle Bells Melody (Note, Duration in ms)
-        // C5=523, D5=587, E5=659, F5=698, G5=784
         const melody = [
             {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50}, // E E E
             {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50}, // E E E
@@ -387,9 +341,8 @@
             
             osc.type = 'triangle';
             osc.frequency.value = freq;
-            gain.gain.value = 0.03; // Very quiet BGM
+            gain.gain.value = 0.03; 
             
-            // Soft envelope
             gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration/1000);
 
@@ -420,18 +373,17 @@
             clearTimeout(bgmInterval);
         }
 
-        // FIXED: Toggle sound properly resets music state
         function toggleSound() {
             state.soundEnabled = !state.soundEnabled;
             document.getElementById('icon-sound-on').style.display = state.soundEnabled ? 'block' : 'none';
             document.getElementById('icon-sound-off').style.display = state.soundEnabled ? 'none' : 'block';
             
             if (state.soundEnabled) {
-                state.musicPlaying = false; // Reset state before starting
+                state.musicPlaying = false;
                 startMusic();
             } else {
                 stopMusic();
-                state.musicPlaying = false; // Ensure state is reset
+                state.musicPlaying = false;
             }
         }
         
@@ -483,7 +435,6 @@
             document.getElementById('btn-back').addEventListener('click', showMenu);
             document.getElementById('btn-replay').addEventListener('click', showMenu);
             
-            // Try to start music on first interaction
             document.body.addEventListener('click', () => {
                 if(state.soundEnabled && !state.musicPlaying) {
                     startMusic();
@@ -499,7 +450,6 @@
                 flake.innerText = '❄';
                 flake.style.left = Math.random() * 100 + '%';
                 flake.style.fontSize = (Math.random() * 20 + 10) + 'px';
-                // Slowed down snow speed: 10s to 20s
                 flake.style.animationDuration = (Math.random() * 10 + 10) + 's';
                 flake.style.animationDelay = (Math.random() * 10) + 's';
                 container.appendChild(flake);
@@ -509,7 +459,6 @@
         function createMenu() {
             const grid = document.getElementById('level-grid');
             grid.innerHTML = '';
-            // 2 to 10
             [2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(num => {
                 const btn = document.createElement('button');
                 btn.className = "bg-red-600 hover:bg-red-500 active:scale-95 transition-all text-white font-bold py-3 px-4 rounded-xl shadow-lg text-xl border-b-4 border-red-800";
@@ -550,7 +499,6 @@
             let selectedQuestions = [];
 
             if (level === 'mixed') {
-                // Balanced Mixed Mode: Ensure at least one question from each table (2-9)
                 const tables = [2, 3, 4, 5, 6, 7, 8, 9];
                 let used = new Set();
 
@@ -630,14 +578,13 @@
             const isSolved = questionData.solved;
             zoneElement.className = `absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${isSolved ? 'scale-100 z-10' : 'scale-100 z-0'}`;
             
-            // 配合整體比例調整題目圓圈大小
+            // 使用 min-[500px]: 作為分界點，取代原來的 md: (768px)
             const baseClasses = "w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors duration-500 relative";
             
-            // Unsolved: Clean look, no border, no shadow
             let solvedClasses = "bg-slate-800/80"; 
-            let content = `<span class="text-xs md:text-xs font-bold text-white whitespace-nowrap">${questionData.n1}×${questionData.n2}</span>`;
+            // 題目字體：小螢幕極小(text-xs)，大於500px時也維持text-xs或微調
+            let content = `<span class="text-xs font-bold text-white whitespace-nowrap">${questionData.n1}×${questionData.n2}</span>`;
             
-            // Solved: Bright color with highlight
             if (isSolved) {
                 if (questionData.solvedColorObj) {
                     solvedClasses = `text-white ${questionData.solvedColorObj.lit}`;
@@ -645,11 +592,12 @@
                     solvedClasses = "bg-yellow-100 shadow-[0_0_20px_rgba(250,204,21,0.8)]";
                 }
                 
+                // 答案字體：小螢幕 text-sm，大於500px時 text-base
                 content = `
                     <div class="absolute top-1 left-2 w-1.5 h-1 bg-white/40 rounded-full blur-[1px]"></div>
                     <div class="text-center animate-bounce-short relative flex items-center justify-center w-full h-full">
-                        <span class="text-sm md:text-base font-bold text-white leading-none drop-shadow-md">${questionData.ans}</span>
-                        <svg class="absolute -top-1 -right-1 text-white w-3 h-3 md:w-3 md:h-3 animate-spin-slow" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
+                        <span class="text-sm min-[500px]:text-base font-bold text-white leading-none drop-shadow-md">${questionData.ans}</span>
+                        <svg class="absolute -top-1 -right-1 text-white w-3 h-3 animate-spin-slow" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
                     </div>`;
             }
             
@@ -687,7 +635,6 @@
         
         function createTrayItem(a) {
             const item = document.createElement('div');
-            // Basic classes - 加強 touch-action
             let classes = `tray-item rounded-full flex items-center justify-center cursor-grab border-2 transition-transform select-none relative`;
             
             if (a.matched) {
@@ -697,7 +644,7 @@
             }
             
             item.className = classes;
-            item.style.touchAction = 'none'; // 關鍵！防止瀏覽器預設行為
+            item.style.touchAction = 'none'; 
             
             if (!a.matched) {
                 item.innerHTML = `
@@ -705,7 +652,6 @@
                     <span class="text-white font-bold drop-shadow-md pointer-events-none">${a.val}</span>
                 `;
                 
-                // 分開處理 mouse 和 touch
                 item.addEventListener('mousedown', (e) => handleDragStart(e, a, item));
                 item.addEventListener('touchstart', (e) => handleDragStart(e, a, item), {passive: true});
             }
@@ -713,14 +659,13 @@
             return item;
         }
 
-        // --- Drag & Drop System (完全重寫) ---
+        // --- Drag & Drop System ---
         let isDragging = false;
         
         function handleDragStart(e, data, originalElement) {
             if (isDragging) return;
             isDragging = true;
             
-            // 不要在 touchstart 時 preventDefault，否則會干擾 touch 事件
             if (e.type === 'mousedown') {
                 e.preventDefault();
             }
@@ -728,7 +673,6 @@
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-            // 創建 ghost - 配合縮小的答案球
             const ghost = document.createElement('div');
             ghost.className = `fixed rounded-full flex items-center justify-center text-white font-bold border-2 ${data.colorObj.bg} shadow-lg`;
             ghost.style.left = clientX + 'px';
@@ -737,19 +681,18 @@
             ghost.style.height = '2.75rem';
             ghost.style.fontSize = '1rem';
             ghost.style.transform = 'translate(-50%, -50%)';
-            ghost.style.pointerEvents = 'none'; // 關鍵！
+            ghost.style.pointerEvents = 'none'; 
             ghost.style.zIndex = '9999';
             ghost.innerHTML = `<span>${data.val}</span>`;
 
             document.body.appendChild(ghost);
-            document.body.style.overflow = 'hidden'; // 防止滾動
+            document.body.style.overflow = 'hidden'; 
             originalElement.style.opacity = '0.3';
 
             state.dragItem = { ...data, element: originalElement };
             state.dragGhost = ghost;
             playSound('pop');
 
-            // 綁定移動和結束事件
             if (e.type === 'mousedown') {
                 document.addEventListener('mousemove', handleDragMove);
                 document.addEventListener('mouseup', handleDragEnd);
@@ -763,7 +706,6 @@
         function handleDragMove(e) {
             if (!state.dragGhost || !isDragging) return;
             
-            // 在 touchmove 時才 preventDefault
             if (e.type === 'touchmove') {
                 e.preventDefault();
             }
@@ -779,16 +721,14 @@
             if (!state.dragGhost || !isDragging) return;
 
             isDragging = false;
-            document.body.style.overflow = ''; // 恢復滾動
+            document.body.style.overflow = ''; 
 
-            // 移除所有監聽器
             document.removeEventListener('mousemove', handleDragMove);
             document.removeEventListener('mouseup', handleDragEnd);
             document.removeEventListener('touchmove', handleDragMove);
             document.removeEventListener('touchend', handleDragEnd);
             document.removeEventListener('touchcancel', handleDragEnd);
 
-            // 獲取最終位置
             let clientX, clientY;
             if (e.changedTouches && e.changedTouches.length > 0) {
                 clientX = e.changedTouches[0].clientX;
@@ -799,7 +739,6 @@
                 clientY = rect.top + rect.height / 2;
             }
             
-            // 檢查碰撞
             const elemBelow = document.elementFromPoint(clientX, clientY);
             const dropZone = elemBelow ? elemBelow.closest('[data-qid]') : null;
             
@@ -817,7 +756,6 @@
                 }
             }
 
-            // 清理
             state.dragGhost.remove();
             if (!success) {
                 state.dragItem.element.style.opacity = '1';
