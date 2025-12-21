@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>聖誕樹乘法遊戲 (Christmas Math Tree)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,42 +48,75 @@
         .animate-bounce-short { animation: bounceShort 0.5s ease-in-out; }
         .animate-spin-slow { animation: spinSlow 3s linear infinite; }
         
-        /* Responsive Game Container Heights */
-        /* 預設：手機版 (Fluid Height, 自動填滿) */
+        /* --- 修正版面配置 --- */
+
+        /* 預設：手機版 (彈性高度) */
         .game-container {
-            height: 100%;
+            /* 修正關鍵：原本是 height: 100%，現在改用 flex: 1 自動填滿剩餘空間 */
+            width: 100%;
+            flex: 1;
+            min-height: 0; /* 防止 flex item 溢出 */
+            display: flex;
+            flex-direction: column;
         }
         .game-main-area {
             flex: 1;
             min-height: 0;
-        }
-        .tree-container-wrapper {
-            width: 135%; /* 手機版寬度放大 */
-            max-width: 135%;
-            aspect-ratio: 200 / 240;
-            max-height: 95%; /* 確保橫式時樹不會太高 */
+            display: flex; /* 確保內容正確排列 */
         }
         
-        /* ★ 修正重點：臨界點判斷
-           原本只判斷 min-width: 500px，導致手機橫式 (寬度夠，但高度不夠) 誤用桌機版。
-           現在增加 and (min-height: 500px)：
-           只有「寬度夠寬」且「高度夠高」的設備 (如平板、電腦)，才使用固定高度版面。
-           手機橫式會自動維持上面的「預設手機版」，樹會自動縮小以適應高度。
-        */
+        /* 樹的容器設定 */
+        .tree-container-wrapper {
+            width: 135%; 
+            max-width: 135%;
+            aspect-ratio: 200 / 240;
+            /* 讓樹在有限高度內自動縮放，保留一點邊距 */
+            max-height: 92%; 
+        }
+
+        /* 針對「高度很矮」的裝置 (手機橫向)，縮小 Footer 邊距以節省空間 */
+        @media (max-height: 500px) {
+            footer {
+                margin-top: 0.25rem !important; /* 縮小上方邊距 */
+            }
+            footer .footer-content {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+                align-items: center;
+            }
+            /* 在極度扁平的螢幕隱藏版權文字，只留圖示，避免擋住樹 */
+            .copyright-text {
+                display: none; 
+            }
+        }
+        
+        /* 桌機/平板模式：當寬度夠寬 且 高度夠高 時才啟用固定大小 */
         @media (min-width: 500px) and (min-height: 500px) {
             .game-container {
-                height: 480px; /* 固定高度 */
+                flex: none; /* 取消彈性，改回固定 */
+                height: 480px; 
             }
             .game-main-area {
                 height: 420px;
                 flex: none;
             }
             .tree-container-wrapper {
-                width: 280px; /* 固定樹寬 */
+                width: 280px;
                 height: 336px;
                 aspect-ratio: unset;
                 max-height: unset;
                 max-width: unset;
+            }
+            /* 恢復 Footer 樣式 */
+            footer {
+                margin-top: 1rem !important;
+            }
+            .copyright-text {
+                display: block !important;
+            }
+            footer .footer-content {
+                display: block;
             }
         }
         
@@ -138,7 +171,6 @@
             flex-shrink: 0;
         }
         
-        /* 同樣套用高度判斷，避免手機橫式時球變太大 */
         @media (min-width: 500px) and (min-height: 500px) {
             .tray-item {
                 width: 2.5rem;
@@ -156,7 +188,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white font-sans h-screen w-screen overflow-hidden select-none flex flex-col">
+<body class="bg-slate-900 text-white font-sans h-[100dvh] w-screen overflow-hidden select-none flex flex-col">
 
     <div id="snow-container" class="absolute inset-0 pointer-events-none z-50"></div>
 
@@ -195,7 +227,7 @@
 
     <div id="screen-game" class="absolute inset-0 z-30 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-hidden">
         
-        <div class="game-container w-full max-w-[600px] flex flex-col">
+        <div class="game-container w-full max-w-[600px] flex flex-col items-center">
         
         <div class="h-4 shrink-0 w-full"></div>
 
@@ -229,16 +261,16 @@
             完成！(All Clear!)
         </div>
         
-        </div>
-        
-        <footer class="mt-4 text-center text-sm text-slate-400">
-            <div class="mt-2 text-xs text-slate-500">
-                © 2025 Christina Yu. All rights reserved.
-            </div>
-            <div class="mt-2 text-xs text-slate-500">
-                <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
-                <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
-                <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+        </div><footer class="mt-4 text-center text-sm text-slate-400 shrink-0 pb-2">
+            <div class="footer-content">
+                <div class="mt-2 text-xs text-slate-500 copyright-text">
+                    © 2025 Christina Yu. All rights reserved.
+                </div>
+                <div class="mt-2 text-xs text-slate-500">
+                    <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
+                    <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
+                    <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+                </div>
             </div>
         </footer>
     </div>
