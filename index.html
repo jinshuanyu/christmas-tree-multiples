@@ -49,7 +49,7 @@
         .animate-spin-slow { animation: spinSlow 3s linear infinite; }
         
         /* Responsive Game Container Heights */
-        /* 手機版默認樣式 (< 500px) */
+        /* 預設：手機版 (Fluid Height, 自動填滿) */
         .game-container {
             height: 100%;
         }
@@ -58,17 +58,19 @@
             min-height: 0;
         }
         .tree-container-wrapper {
-            width: 135%; /* 手機版放大 */
+            width: 135%; /* 手機版寬度放大 */
             max-width: 135%;
             aspect-ratio: 200 / 240;
-            max-height: 95%;
+            max-height: 95%; /* 確保橫式時樹不會太高 */
         }
         
-        /* Critical Point: 500px 
-           只要大於 500px (包含平板直式、橫式、桌機)，全部強制使用「桌機版面」
-           這樣平板直式就不會顯示滿版的大樹，而是顯示精緻的小樹
+        /* ★ 修正重點：臨界點判斷
+           原本只判斷 min-width: 500px，導致手機橫式 (寬度夠，但高度不夠) 誤用桌機版。
+           現在增加 and (min-height: 500px)：
+           只有「寬度夠寬」且「高度夠高」的設備 (如平板、電腦)，才使用固定高度版面。
+           手機橫式會自動維持上面的「預設手機版」，樹會自動縮小以適應高度。
         */
-        @media (min-width: 500px) {
+        @media (min-width: 500px) and (min-height: 500px) {
             .game-container {
                 height: 480px; /* 固定高度 */
             }
@@ -77,7 +79,7 @@
                 flex: none;
             }
             .tree-container-wrapper {
-                width: 280px; /* 固定寬度 */
+                width: 280px; /* 固定樹寬 */
                 height: 336px;
                 aspect-ratio: unset;
                 max-height: unset;
@@ -136,8 +138,8 @@
             flex-shrink: 0;
         }
         
-        /* 500px 以上就讓球體稍微大一點點 (符合桌機/平板舒適度) */
-        @media (min-width: 500px) {
+        /* 同樣套用高度判斷，避免手機橫式時球變太大 */
+        @media (min-width: 500px) and (min-height: 500px) {
             .tray-item {
                 width: 2.5rem;
                 height: 2.5rem;
@@ -205,8 +207,7 @@
 
         <div class="game-main-area w-full flex flex-row items-start justify-between relative">
             
-            <div id="tray-left" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
-                </div>
+            <div id="tray-left" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto"></div>
 
             <div class="flex-1 h-full flex items-center justify-center relative min-w-0 px-1">
                 <div class="tree-container-wrapper relative flex justify-center items-center select-none" id="tree-container" style="min-width: 0;">
@@ -217,20 +218,20 @@
                         <path d="M100 20 L45 90 L155 90 Z" fill="#16a34a" />
                         <path transform="translate(100, 20) scale(0.8)" d="M0 -15 L4 -5 L15 -5 L6 2 L9 13 L0 7 L-9 13 L-6 2 L-15 -5 L-4 -5 Z" fill="#FACC15" class="star-glow" />
                     </svg>
-
                     <div id="drop-zones" class="absolute inset-0 w-full h-full"></div>
                 </div>
             </div>
 
-            <div id="tray-right" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto">
-                </div>
+            <div id="tray-right" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto"></div>
         </div>
         
         <div id="msg-all-clear" class="absolute top-2 left-0 right-0 text-green-400 font-bold animate-pulse text-lg text-center hidden pointer-events-none drop-shadow-lg bg-black/50 py-1 backdrop-blur-sm z-50">
             完成！(All Clear!)
         </div>
         
-        </div><footer class="mt-4 text-center text-sm text-slate-400">
+        </div>
+        
+        <footer class="mt-4 text-center text-sm text-slate-400">
             <div class="mt-2 text-xs text-slate-500">
                 © 2025 Christina Yu. All rights reserved.
             </div>
@@ -240,23 +241,19 @@
                 <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
             </div>
         </footer>
-        
     </div>
 
     <div id="screen-win" class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center text-center p-8 hidden animate-fade-in">
         <div class="mb-6 animate-bounce">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="#FACC15" stroke="#EAB308" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
-        
         <p class="text-2xl text-green-300 mb-4">聖誕樹好漂亮！</p>
         <h2 class="text-5xl font-bold text-white mb-8">聖誕快樂！</h2>
-        
         <button id="btn-replay" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-16 rounded-full text-lg shadow-xl flex items-center gap-3 transition-transform hover:scale-105 mb-8">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
             再玩一次
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
         </button>
-        
         <footer class="text-center text-sm text-slate-400">
             <div class="mt-2 text-xs text-slate-500">
                 © 2025 Christina Yu. All rights reserved.
@@ -270,66 +267,29 @@
     </div>
 
     <script>
-        // --- Game Data & State ---
-        const state = {
-            screen: 'menu', 
-            level: null,
-            questions: [],
-            answers: [],
-            soundEnabled: true,
-            dragItem: null, 
-            dragGhost: null,
-            musicPlaying: false
-        };
-
+        const state = { screen: 'menu', level: null, questions: [], answers: [], soundEnabled: true, dragItem: null, dragGhost: null, musicPlaying: false };
         const colorPalette = [
-            { 
-                name: 'red', 
-                bg: 'bg-gradient-to-br from-red-500 to-red-700 border-red-400', 
-                lit: 'bg-gradient-to-br from-red-400 to-red-600 shadow-[0_0_20px_rgba(248,113,113,0.9)]' 
-            },
-            { 
-                name: 'orange', 
-                bg: 'bg-gradient-to-br from-orange-500 to-orange-700 border-orange-400', 
-                lit: 'bg-gradient-to-br from-orange-400 to-orange-600 shadow-[0_0_20px_rgba(251,146,60,0.9)]' 
-            },
-            { 
-                name: 'yellow', 
-                bg: 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-300', 
-                lit: 'bg-gradient-to-br from-yellow-300 to-yellow-500 shadow-[0_0_20px_rgba(250,204,21,0.9)]' 
-            },
-            { 
-                name: 'blue', 
-                bg: 'bg-gradient-to-br from-blue-500 to-blue-700 border-blue-400', 
-                lit: 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_20px_rgba(96,165,250,0.9)]' 
-            },
-            {
-                name: 'purple',
-                bg: 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-400',
-                lit: 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-[0_0_20px_rgba(192,132,252,0.9)]'
-            }
+            { name: 'red', bg: 'bg-gradient-to-br from-red-500 to-red-700 border-red-400', lit: 'bg-gradient-to-br from-red-400 to-red-600 shadow-[0_0_20px_rgba(248,113,113,0.9)]' },
+            { name: 'orange', bg: 'bg-gradient-to-br from-orange-500 to-orange-700 border-orange-400', lit: 'bg-gradient-to-br from-orange-400 to-orange-600 shadow-[0_0_20px_rgba(251,146,60,0.9)]' },
+            { name: 'yellow', bg: 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-300', lit: 'bg-gradient-to-br from-yellow-300 to-yellow-500 shadow-[0_0_20px_rgba(250,204,21,0.9)]' },
+            { name: 'blue', bg: 'bg-gradient-to-br from-blue-500 to-blue-700 border-blue-400', lit: 'bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_20px_rgba(96,165,250,0.9)]' },
+            { name: 'purple', bg: 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-400', lit: 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-[0_0_20px_rgba(192,132,252,0.9)]' }
         ];
-
-        // Positions on Tree (Percentages)
         const optimalPositions = [
-            { x: 50, y: 20 }, // Row 1 (Top)
-            { x: 36, y: 40 }, { x: 64, y: 40 }, // Row 2
-            { x: 25, y: 60 }, { x: 50, y: 58 }, { x: 75, y: 60 }, // Row 3
-            { x: 18, y: 81 }, { x: 39, y: 81 }, { x: 61, y: 81 }, { x: 82, y: 81 } // Row 4 (Base)
+            { x: 50, y: 20 }, { x: 36, y: 40 }, { x: 64, y: 40 },
+            { x: 25, y: 60 }, { x: 50, y: 58 }, { x: 75, y: 60 },
+            { x: 18, y: 81 }, { x: 39, y: 81 }, { x: 61, y: 81 }, { x: 82, y: 81 }
         ];
-
-        // --- Audio System ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let bgmInterval = null;
         let bgmNoteIndex = 0;
-
         const melody = [
-            {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50}, // E E E
-            {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50}, // E E E
-            {f: 659, d: 200}, {f: 0, d: 50}, {f: 784, d: 200}, {f: 0, d: 50}, {f: 523, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 659, d: 800}, {f: 0, d: 100}, // E G C D E
-            {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, // F F F F
-            {f: 698, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, // F E E E 
-            {f: 659, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 587, d: 400}, {f: 0, d: 50}, {f: 784, d: 400}, {f: 0, d: 400} // E D D E D G
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50},
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 400}, {f: 0, d: 50},
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 784, d: 200}, {f: 0, d: 50}, {f: 523, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 659, d: 800}, {f: 0, d: 100},
+            {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50}, {f: 698, d: 200}, {f: 0, d: 50},
+            {f: 698, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50},
+            {f: 659, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 587, d: 200}, {f: 0, d: 50}, {f: 659, d: 200}, {f: 0, d: 50}, {f: 587, d: 400}, {f: 0, d: 50}, {f: 784, d: 400}, {f: 0, d: 400}
         ];
 
         function playTone(freq, duration) {
@@ -338,24 +298,19 @@
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.type = 'triangle';
             osc.frequency.value = freq;
             gain.gain.value = 0.03; 
-            
             gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration/1000);
-
             osc.start();
             osc.stop(audioCtx.currentTime + duration/1000);
         }
 
         function playNextNote() {
             if (!state.musicPlaying || !state.soundEnabled) return;
-            
             const note = melody[bgmNoteIndex];
             playTone(note.f, note.d);
-            
             bgmNoteIndex = (bgmNoteIndex + 1) % melody.length;
             bgmInterval = setTimeout(playNextNote, note.d);
         }
@@ -377,7 +332,6 @@
             state.soundEnabled = !state.soundEnabled;
             document.getElementById('icon-sound-on').style.display = state.soundEnabled ? 'block' : 'none';
             document.getElementById('icon-sound-off').style.display = state.soundEnabled ? 'none' : 'block';
-            
             if (state.soundEnabled) {
                 state.musicPlaying = false;
                 startMusic();
@@ -390,30 +344,25 @@
         function playSound(type) {
             if (!state.soundEnabled) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
-
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             const now = audioCtx.currentTime;
-
             if (type === 'success') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now);
                 gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
                 osc.start(now); osc.stop(now + 0.5);
-
                 const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
                 osc2.connect(gain2); gain2.connect(audioCtx.destination);
                 osc2.type = 'sine'; osc2.frequency.setValueAtTime(659.25, now + 0.1);
                 gain2.gain.setValueAtTime(0.1, now + 0.1); gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
                 osc2.start(now + 0.1); osc2.stop(now + 0.6);
-
                 const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain();
                 osc3.connect(gain3); gain3.connect(audioCtx.destination);
                 osc3.type = 'triangle'; osc3.frequency.setValueAtTime(783.99, now + 0.2);
                 gain3.gain.setValueAtTime(0.08, now + 0.2); gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
                 osc3.start(now + 0.2); osc3.stop(now + 0.8);
-
             } else if (type === 'error') {
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now + 0.3);
@@ -427,18 +376,14 @@
             }
         }
 
-        // --- Init ---
         function init() {
             createSnow();
             createMenu();
             document.getElementById('btn-sound').addEventListener('click', toggleSound);
             document.getElementById('btn-back').addEventListener('click', showMenu);
             document.getElementById('btn-replay').addEventListener('click', showMenu);
-            
             document.body.addEventListener('click', () => {
-                if(state.soundEnabled && !state.musicPlaying) {
-                    startMusic();
-                }
+                if(state.soundEnabled && !state.musicPlaying) startMusic();
             }, { once: true });
         }
 
@@ -479,120 +424,83 @@
             document.getElementById('screen-game').classList.add('hidden');
             document.getElementById('screen-win').classList.add('hidden');
             document.getElementById('btn-back').classList.add('hidden');
-
             const target = document.getElementById(`screen-${screenName}`);
             target.classList.remove('hidden');
             void target.offsetWidth; 
             target.classList.remove('opacity-0');
-            
-            if(screenName === 'game') {
-                document.getElementById('btn-back').classList.remove('hidden');
-            }
+            if(screenName === 'game') document.getElementById('btn-back').classList.remove('hidden');
         }
 
-        function showMenu() {
-            switchScreen('menu');
-        }
+        function showMenu() { switchScreen('menu'); }
 
         function startGame(level) {
             state.level = level;
             let selectedQuestions = [];
-
             if (level === 'mixed') {
                 const tables = [2, 3, 4, 5, 6, 7, 8, 9];
                 let used = new Set();
-
                 tables.forEach(t => {
                     const n2 = Math.floor(Math.random() * 10) + 1; 
                     selectedQuestions.push({n1: t, n2: n2});
                     used.add(`${t}-${n2}`);
                 });
-
                 let remainingPool = [];
                 for(let i=2; i<=9; i++) {
                     for(let j=1; j<=10; j++) {
-                        if (!used.has(`${i}-${j}`)) {
-                            remainingPool.push({n1: i, n2: j});
-                        }
+                        if (!used.has(`${i}-${j}`)) remainingPool.push({n1: i, n2: j});
                     }
                 }
-                
                 remainingPool.sort(() => Math.random() - 0.5);
                 selectedQuestions.push(...remainingPool.slice(0, 2));
                 selectedQuestions.sort(() => Math.random() - 0.5);
-
             } else {
                 let pool = [];
                 for(let i=1; i<=10; i++) pool.push({n1:level, n2:i});
                 pool.sort(() => Math.random() - 0.5);
                 selectedQuestions = pool.slice(0, 10);
             }
-
             const positions = [...optimalPositions].sort(() => Math.random() - 0.5);
-
             state.questions = selectedQuestions.map((q, idx) => ({
-                id: `q-${idx}`,
-                n1: q.n1, n2: q.n2, ans: q.n1 * q.n2,
-                solved: false, x: positions[idx].x, y: positions[idx].y,
-                solvedColorObj: null 
+                id: `q-${idx}`, n1: q.n1, n2: q.n2, ans: q.n1 * q.n2,
+                solved: false, x: positions[idx].x, y: positions[idx].y, solvedColorObj: null 
             }));
-
             let colorAssignments = [];
-            colorPalette.forEach(c => {
-                colorAssignments.push(c);
-                colorAssignments.push(c);
-            });
+            colorPalette.forEach(c => { colorAssignments.push(c); colorAssignments.push(c); });
             colorAssignments.sort(() => Math.random() - 0.5);
-
             state.answers = state.questions.map((q, idx) => ({
-                id: `a-${q.id}`, 
-                val: q.ans, 
-                matched: false,
-                colorObj: colorAssignments[idx]
+                id: `a-${q.id}`, val: q.ans, matched: false, colorObj: colorAssignments[idx]
             })).sort(() => Math.random() - 0.5);
-
             renderLevel();
             switchScreen('game');
         }
 
         function renderLevel() {
             document.getElementById('level-display').innerText = state.level === 'mixed' ? '綜合挑戰' : state.level + ' 的乘法表';
-            
             const dropContainer = document.getElementById('drop-zones');
             dropContainer.innerHTML = '';
-            
             state.questions.forEach(q => {
                 const zone = document.createElement('div');
                 zone.dataset.qid = q.id;
                 zone.className = `absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500`;
-                zone.style.left = q.x + '%';
-                zone.style.top = q.y + '%';
+                zone.style.left = q.x + '%'; zone.style.top = q.y + '%';
                 updateZoneVisuals(zone, q);
                 dropContainer.appendChild(zone);
             });
-
             renderTray();
         }
 
         function updateZoneVisuals(zoneElement, questionData) {
             const isSolved = questionData.solved;
             zoneElement.className = `absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${isSolved ? 'scale-100 z-10' : 'scale-100 z-0'}`;
-            
-            // 使用 min-[500px]: 作為分界點，取代原來的 md: (768px)
             const baseClasses = "w-10 h-10 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors duration-500 relative";
-            
             let solvedClasses = "bg-slate-800/80"; 
-            // 題目字體：小螢幕極小(text-xs)，大於500px時也維持text-xs或微調
             let content = `<span class="text-xs font-bold text-white whitespace-nowrap">${questionData.n1}×${questionData.n2}</span>`;
-            
             if (isSolved) {
                 if (questionData.solvedColorObj) {
                     solvedClasses = `text-white ${questionData.solvedColorObj.lit}`;
                 } else {
                     solvedClasses = "bg-yellow-100 shadow-[0_0_20px_rgba(250,204,21,0.8)]";
                 }
-                
-                // 答案字體：小螢幕 text-sm，大於500px時 text-base
                 content = `
                     <div class="absolute top-1 left-2 w-1.5 h-1 bg-white/40 rounded-full blur-[1px]"></div>
                     <div class="text-center animate-bounce-short relative flex items-center justify-center w-full h-full">
@@ -600,21 +508,13 @@
                         <svg class="absolute -top-1 -right-1 text-white w-3 h-3 animate-spin-slow" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
                     </div>`;
             }
-            
-            zoneElement.innerHTML = `
-                <div class="${baseClasses} ${solvedClasses}">
-                    ${content}
-                </div>
-            `;
+            zoneElement.innerHTML = `<div class="${baseClasses} ${solvedClasses}">${content}</div>`;
         }
 
         function renderTray() {
             const leftTray = document.getElementById('tray-left');
             const rightTray = document.getElementById('tray-right');
-            
-            leftTray.innerHTML = '';
-            rightTray.innerHTML = '';
-            
+            leftTray.innerHTML = ''; rightTray.innerHTML = '';
             const allMatched = state.answers.every(a => a.matched);
             if (allMatched) {
                 document.getElementById('msg-all-clear').classList.remove('hidden');
@@ -622,77 +522,47 @@
             } else {
                 document.getElementById('msg-all-clear').classList.add('hidden');
             }
-
             state.answers.forEach((a, index) => {
                 const item = createTrayItem(a);
-                if (index % 2 === 0) {
-                    leftTray.appendChild(item);
-                } else {
-                    rightTray.appendChild(item);
-                }
+                if (index % 2 === 0) leftTray.appendChild(item); else rightTray.appendChild(item);
             });
         }
         
         function createTrayItem(a) {
             const item = document.createElement('div');
             let classes = `tray-item rounded-full flex items-center justify-center cursor-grab border-2 transition-transform select-none relative`;
-            
-            if (a.matched) {
-                classes += ` opacity-0 pointer-events-none`;
-            } else {
-                classes += ` ${a.colorObj.bg} shadow-lg hover:scale-110`;
-            }
-            
+            if (a.matched) classes += ` opacity-0 pointer-events-none`;
+            else classes += ` ${a.colorObj.bg} shadow-lg hover:scale-110`;
             item.className = classes;
             item.style.touchAction = 'none'; 
-            
             if (!a.matched) {
-                item.innerHTML = `
-                    <div class="absolute top-1 left-2 w-1.5 h-1 bg-white/40 rounded-full blur-[1px]"></div>
-                    <span class="text-white font-bold drop-shadow-md pointer-events-none">${a.val}</span>
-                `;
-                
+                item.innerHTML = `<div class="absolute top-1 left-2 w-1.5 h-1 bg-white/40 rounded-full blur-[1px]"></div><span class="text-white font-bold drop-shadow-md pointer-events-none">${a.val}</span>`;
                 item.addEventListener('mousedown', (e) => handleDragStart(e, a, item));
                 item.addEventListener('touchstart', (e) => handleDragStart(e, a, item), {passive: true});
             }
-            
             return item;
         }
 
-        // --- Drag & Drop System ---
         let isDragging = false;
-        
         function handleDragStart(e, data, originalElement) {
             if (isDragging) return;
             isDragging = true;
-            
-            if (e.type === 'mousedown') {
-                e.preventDefault();
-            }
-            
+            if (e.type === 'mousedown') e.preventDefault();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
             const ghost = document.createElement('div');
             ghost.className = `fixed rounded-full flex items-center justify-center text-white font-bold border-2 ${data.colorObj.bg} shadow-lg`;
-            ghost.style.left = clientX + 'px';
-            ghost.style.top = clientY + 'px';
-            ghost.style.width = '2.75rem';
-            ghost.style.height = '2.75rem';
-            ghost.style.fontSize = '1rem';
-            ghost.style.transform = 'translate(-50%, -50%)';
-            ghost.style.pointerEvents = 'none'; 
-            ghost.style.zIndex = '9999';
+            ghost.style.left = clientX + 'px'; ghost.style.top = clientY + 'px';
+            ghost.style.width = '2.75rem'; ghost.style.height = '2.75rem';
+            ghost.style.fontSize = '1rem'; ghost.style.transform = 'translate(-50%, -50%)';
+            ghost.style.pointerEvents = 'none'; ghost.style.zIndex = '9999';
             ghost.innerHTML = `<span>${data.val}</span>`;
-
             document.body.appendChild(ghost);
             document.body.style.overflow = 'hidden'; 
             originalElement.style.opacity = '0.3';
-
             state.dragItem = { ...data, element: originalElement };
             state.dragGhost = ghost;
             playSound('pop');
-
             if (e.type === 'mousedown') {
                 document.addEventListener('mousemove', handleDragMove);
                 document.addEventListener('mouseup', handleDragEnd);
@@ -705,43 +575,30 @@
 
         function handleDragMove(e) {
             if (!state.dragGhost || !isDragging) return;
-            
-            if (e.type === 'touchmove') {
-                e.preventDefault();
-            }
-            
+            if (e.type === 'touchmove') e.preventDefault();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            state.dragGhost.style.left = clientX + 'px';
-            state.dragGhost.style.top = clientY + 'px';
+            state.dragGhost.style.left = clientX + 'px'; state.dragGhost.style.top = clientY + 'px';
         }
 
         function handleDragEnd(e) {
             if (!state.dragGhost || !isDragging) return;
-
             isDragging = false;
             document.body.style.overflow = ''; 
-
             document.removeEventListener('mousemove', handleDragMove);
             document.removeEventListener('mouseup', handleDragEnd);
             document.removeEventListener('touchmove', handleDragMove);
             document.removeEventListener('touchend', handleDragEnd);
             document.removeEventListener('touchcancel', handleDragEnd);
-
             let clientX, clientY;
             if (e.changedTouches && e.changedTouches.length > 0) {
-                clientX = e.changedTouches[0].clientX;
-                clientY = e.changedTouches[0].clientY;
+                clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY;
             } else {
                 const rect = state.dragGhost.getBoundingClientRect();
-                clientX = rect.left + rect.width / 2;
-                clientY = rect.top + rect.height / 2;
+                clientX = rect.left + rect.width / 2; clientY = rect.top + rect.height / 2;
             }
-            
             const elemBelow = document.elementFromPoint(clientX, clientY);
             const dropZone = elemBelow ? elemBelow.closest('[data-qid]') : null;
-            
             let success = false;
             if (dropZone) {
                 const qId = dropZone.dataset.qid;
@@ -755,31 +612,20 @@
                     }
                 }
             }
-
             state.dragGhost.remove();
-            if (!success) {
-                state.dragItem.element.style.opacity = '1';
-            }
-            
-            state.dragGhost = null;
-            state.dragItem = null;
+            if (!success) state.dragItem.element.style.opacity = '1';
+            state.dragGhost = null; state.dragItem = null;
         }
 
         function handleSuccess(question, dropZoneElement) {
             playSound('success');
             question.solved = true;
-            
             question.solvedColorObj = state.dragItem.colorObj;
-
             const ansObj = state.answers.find(a => a.id === state.dragItem.id);
             if (ansObj) ansObj.matched = true;
-            
             updateZoneVisuals(dropZoneElement, question);
             renderTray(); 
-            
-            if (state.questions.every(q => q.solved)) {
-                setTimeout(() => switchScreen('win'), 1000);
-            }
+            if (state.questions.every(q => q.solved)) setTimeout(() => switchScreen('win'), 1000);
         }
 
         init();
