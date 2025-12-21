@@ -44,58 +44,48 @@
             10% { opacity: 1; }
             100% { transform: translateY(110vh) translateX(20px); opacity: 0.3; }
         }
+        @keyframes rotatePhone {
+            0%, 10% { transform: rotate(0deg); }
+            40%, 60% { transform: rotate(-90deg); }
+            90%, 100% { transform: rotate(0deg); }
+        }
         
         .animate-bounce-short { animation: bounceShort 0.5s ease-in-out; }
         .animate-spin-slow { animation: spinSlow 3s linear infinite; }
-        
-        /* --- 修正版面配置 --- */
+        .animate-rotate-phone { animation: rotatePhone 2s ease-in-out infinite; }
 
-        /* 預設：手機版 (彈性高度) */
+        /* --- 核心版面設定 --- */
+        
+        /* 1. 旋轉提示層 (預設隱藏) */
+        #rotate-warning {
+            display: none;
+        }
+
+        /* 2. 手機版預設 (直式) */
         .game-container {
-            /* 修正關鍵：原本是 height: 100%，現在改用 flex: 1 自動填滿剩餘空間 */
             width: 100%;
-            flex: 1;
-            min-height: 0; /* 防止 flex item 溢出 */
+            height: 100%;
             display: flex;
             flex-direction: column;
         }
         .game-main-area {
             flex: 1;
             min-height: 0;
-            display: flex; /* 確保內容正確排列 */
+            display: flex;
         }
-        
-        /* 樹的容器設定 */
         .tree-container-wrapper {
             width: 135%; 
             max-width: 135%;
             aspect-ratio: 200 / 240;
-            /* 讓樹在有限高度內自動縮放，保留一點邊距 */
-            max-height: 92%; 
+            max-height: 95%; 
         }
 
-        /* 針對「高度很矮」的裝置 (手機橫向)，縮小 Footer 邊距以節省空間 */
-        @media (max-height: 500px) {
-            footer {
-                margin-top: 0.25rem !important; /* 縮小上方邊距 */
-            }
-            footer .footer-content {
-                display: flex;
-                gap: 10px;
-                justify-content: center;
-                align-items: center;
-            }
-            /* 在極度扁平的螢幕隱藏版權文字，只留圖示，避免擋住樹 */
-            .copyright-text {
-                display: none; 
-            }
-        }
-        
-        /* 桌機/平板模式：當寬度夠寬 且 高度夠高 時才啟用固定大小 */
+        /* 3. 桌機/平板模式 (> 500px) */
+        /* 只有當寬度大於 500px 且 高度也大於 500px (即不是手機橫向) 時，才啟用固定版面 */
         @media (min-width: 500px) and (min-height: 500px) {
             .game-container {
-                flex: none; /* 取消彈性，改回固定 */
                 height: 480px; 
+                flex: none;
             }
             .game-main-area {
                 height: 420px;
@@ -108,15 +98,27 @@
                 max-height: unset;
                 max-width: unset;
             }
-            /* 恢復 Footer 樣式 */
-            footer {
-                margin-top: 1rem !important;
+            .tray-item {
+                width: 2.5rem !important;
+                height: 2.5rem !important;
+                font-size: 1rem !important;
             }
-            .copyright-text {
-                display: block !important;
+        }
+
+        /* ★★★ 強制轉向邏輯 ★★★ */
+        /* 當裝置處於橫向 (landscape) 且 高度小於 500px (代表是手機橫拿，不是平板或桌機) */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            /* 顯示警告層 */
+            #rotate-warning {
+                display: flex !important;
             }
-            footer .footer-content {
-                display: block;
+            /* 隱藏所有遊戲內容，避免破版 */
+            #main-app {
+                display: none !important;
+            }
+            /* 背景保持深色 */
+            body {
+                background-color: #0f172a; 
             }
         }
         
@@ -134,14 +136,6 @@
             animation-iteration-count: infinite;
             pointer-events: none;
             z-index: 100;
-        }
-
-        .no-scroll {
-            overflow: hidden;
-            touch-action: none;
-            position: fixed;
-            width: 100%;
-            height: 100%;
         }
 
         .drag-ghost {
@@ -163,20 +157,13 @@
             font-family: 'Noto Sans TC', sans-serif;
         }
 
-        /* Tray Item Sizing */
+        /* Tray Item Sizing - Mobile Default */
         .tray-item {
             width: 2.5rem; 
             height: 2.5rem;
             font-size: 0.95rem;
             flex-shrink: 0;
-        }
-        
-        @media (min-width: 500px) and (min-height: 500px) {
-            .tray-item {
-                width: 2.5rem;
-                height: 2.5rem;
-                font-size: 1rem;
-            }
+            touch-action: none; /* 關鍵：防止觸控時瀏覽器滾動 */
         }
         
         .side-tray::-webkit-scrollbar {
@@ -190,80 +177,41 @@
 </head>
 <body class="bg-slate-900 text-white font-sans h-[100dvh] w-screen overflow-hidden select-none flex flex-col">
 
-    <div id="snow-container" class="absolute inset-0 pointer-events-none z-50"></div>
-
-    <div class="absolute top-2 left-4 right-4 flex justify-between items-center z-50 h-10">
-        <button id="btn-back" class="hidden p-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-sm transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-        </button>
-        <div class="flex-1"></div>
-        <button id="btn-sound" class="p-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-sm transition">
-            <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-            <svg id="icon-sound-off" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-        </button>
+    <div id="rotate-warning" class="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center text-center p-8">
+        <div class="mb-8 animate-rotate-phone text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">請將手機轉為直式</h2>
+        <p class="text-slate-400">為了最佳遊戲體驗，<br>本遊戲僅支援直式操作。</p>
     </div>
 
-    <div id="screen-menu" class="absolute inset-0 z-40 flex flex-col items-center justify-center p-6 transition-opacity duration-300">
-        <h1 class="text-3xl md:text-4xl font-bold mb-2 text-green-400 drop-shadow-lg font-serif text-center" style="font-family: 'Noto Sans TC', sans-serif;">聖誕樹乘法遊戲</h1>
-        <p class="text-base text-slate-300 mb-8 text-center">拖曳正確答案裝飾聖誕樹！</p>
-        
-        <div class="bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-slate-700 w-full max-w-md">
-            <h2 class="text-lg font-semibold mb-4 text-center">選擇乘法表</h2>
-            <div id="level-grid" class="grid grid-cols-3 gap-3">
-                </div>
-        </div>
-        
-        <footer class="mt-8 text-center text-sm text-slate-400">
-            <div class="mt-2 text-xs text-slate-500">
-                © 2025 Christina Yu. All rights reserved.
-            </div>
-            <div class="mt-2 text-xs text-slate-500">
-                <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
-                <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
-                <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
-            </div>
-        </footer>
-    </div>
+    <div id="main-app" class="contents">
 
-    <div id="screen-game" class="absolute inset-0 z-30 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-hidden">
-        
-        <div class="game-container w-full max-w-[600px] flex flex-col items-center">
-        
-        <div class="h-4 shrink-0 w-full"></div>
+        <div id="snow-container" class="absolute inset-0 pointer-events-none z-50"></div>
 
-        <div class="shrink-0 flex justify-center mb-1 w-full">
-            <div class="bg-slate-800/50 backdrop-blur rounded-full px-3 py-1 border border-slate-600">
-                <span id="level-display" class="text-green-300 font-bold text-sm min-[500px]:text-sm">等級</span>
-            </div>
+        <div class="absolute top-2 left-4 right-4 flex justify-between items-center z-50 h-10">
+            <button id="btn-back" class="hidden p-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-sm transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            </button>
+            <div class="flex-1"></div>
+            <button id="btn-sound" class="p-2 bg-white/10 rounded-full hover:bg-white/20 backdrop-blur-sm transition">
+                <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                <svg id="icon-sound-off" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            </button>
         </div>
 
-        <div class="game-main-area w-full flex flex-row items-start justify-between relative">
+        <div id="screen-menu" class="absolute inset-0 z-40 flex flex-col items-center justify-center p-6 transition-opacity duration-300">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2 text-green-400 drop-shadow-lg font-serif text-center" style="font-family: 'Noto Sans TC', sans-serif;">聖誕樹乘法遊戲</h1>
+            <p class="text-base text-slate-300 mb-8 text-center">拖曳正確答案裝飾聖誕樹！</p>
             
-            <div id="tray-left" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto"></div>
-
-            <div class="flex-1 h-full flex items-center justify-center relative min-w-0 px-1">
-                <div class="tree-container-wrapper relative flex justify-center items-center select-none" id="tree-container" style="min-width: 0;">
-                    <svg viewBox="0 0 200 240" class="w-full h-full drop-shadow-2xl">
-                        <rect x="85" y="200" width="30" height="40" fill="#5D4037" />
-                        <path d="M100 110 L5 210 L195 210 Z" fill="#166534" /> 
-                        <path d="M100 60 L25 150 L175 150 Z" fill="#15803d" />
-                        <path d="M100 20 L45 90 L155 90 Z" fill="#16a34a" />
-                        <path transform="translate(100, 20) scale(0.8)" d="M0 -15 L4 -5 L15 -5 L6 2 L9 13 L0 7 L-9 13 L-6 2 L-15 -5 L-4 -5 Z" fill="#FACC15" class="star-glow" />
-                    </svg>
-                    <div id="drop-zones" class="absolute inset-0 w-full h-full"></div>
-                </div>
+            <div class="bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-slate-700 w-full max-w-md">
+                <h2 class="text-lg font-semibold mb-4 text-center">選擇乘法表</h2>
+                <div id="level-grid" class="grid grid-cols-3 gap-3">
+                    </div>
             </div>
-
-            <div id="tray-right" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto"></div>
-        </div>
-        
-        <div id="msg-all-clear" class="absolute top-2 left-0 right-0 text-green-400 font-bold animate-pulse text-lg text-center hidden pointer-events-none drop-shadow-lg bg-black/50 py-1 backdrop-blur-sm z-50">
-            完成！(All Clear!)
-        </div>
-        
-        </div><footer class="mt-4 text-center text-sm text-slate-400 shrink-0 pb-2">
-            <div class="footer-content">
-                <div class="mt-2 text-xs text-slate-500 copyright-text">
+            
+            <footer class="mt-8 text-center text-sm text-slate-400">
+                <div class="mt-2 text-xs text-slate-500">
                     © 2025 Christina Yu. All rights reserved.
                 </div>
                 <div class="mt-2 text-xs text-slate-500">
@@ -271,34 +219,83 @@
                     <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
                     <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
                 </div>
-            </div>
-        </footer>
-    </div>
-
-    <div id="screen-win" class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center text-center p-8 hidden animate-fade-in">
-        <div class="mb-6 animate-bounce">
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="#FACC15" stroke="#EAB308" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </footer>
         </div>
-        <p class="text-2xl text-green-300 mb-4">聖誕樹好漂亮！</p>
-        <h2 class="text-5xl font-bold text-white mb-8">聖誕快樂！</h2>
-        <button id="btn-replay" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-16 rounded-full text-lg shadow-xl flex items-center gap-3 transition-transform hover:scale-105 mb-8">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-            再玩一次
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-        </button>
-        <footer class="text-center text-sm text-slate-400">
-            <div class="mt-2 text-xs text-slate-500">
-                © 2025 Christina Yu. All rights reserved.
-            </div>
-            <div class="mt-2 text-xs text-slate-500">
-                <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
-                <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
-                <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
-            </div>
-        </footer>
-    </div>
 
-    <script>
+        <div id="screen-game" class="absolute inset-0 z-30 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300 overflow-hidden">
+            
+            <div class="game-container w-full max-w-[600px] flex flex-col items-center">
+            
+            <div class="h-4 shrink-0 w-full"></div>
+
+            <div class="shrink-0 flex justify-center mb-1 w-full">
+                <div class="bg-slate-800/50 backdrop-blur rounded-full px-3 py-1 border border-slate-600">
+                    <span id="level-display" class="text-green-300 font-bold text-sm min-[500px]:text-sm">等級</span>
+                </div>
+            </div>
+
+            <div class="game-main-area w-full flex flex-row items-start justify-between relative">
+                
+                <div id="tray-left" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto"></div>
+
+                <div class="flex-1 h-full flex items-center justify-center relative min-w-0 px-1">
+                    <div class="tree-container-wrapper relative flex justify-center items-center select-none" id="tree-container" style="min-width: 0;">
+                        <svg viewBox="0 0 200 240" class="w-full h-full drop-shadow-2xl">
+                            <rect x="85" y="200" width="30" height="40" fill="#5D4037" />
+                            <path d="M100 110 L5 210 L195 210 Z" fill="#166534" /> 
+                            <path d="M100 60 L25 150 L175 150 Z" fill="#15803d" />
+                            <path d="M100 20 L45 90 L155 90 Z" fill="#16a34a" />
+                            <path transform="translate(100, 20) scale(0.8)" d="M0 -15 L4 -5 L15 -5 L6 2 L9 13 L0 7 L-9 13 L-6 2 L-15 -5 L-4 -5 Z" fill="#FACC15" class="star-glow" />
+                        </svg>
+                        <div id="drop-zones" class="absolute inset-0 w-full h-full"></div>
+                    </div>
+                </div>
+
+                <div id="tray-right" class="side-tray w-12 min-[500px]:w-14 h-full flex flex-col items-center justify-start pt-2 gap-2 z-20 overflow-y-auto"></div>
+            </div>
+            
+            <div id="msg-all-clear" class="absolute top-2 left-0 right-0 text-green-400 font-bold animate-pulse text-lg text-center hidden pointer-events-none drop-shadow-lg bg-black/50 py-1 backdrop-blur-sm z-50">
+                完成！(All Clear!)
+            </div>
+            
+            </div><footer class="mt-4 text-center text-sm text-slate-400 shrink-0 pb-2">
+                <div class="footer-content">
+                    <div class="mt-2 text-xs text-slate-500 copyright-text">
+                        © 2025 Christina Yu. All rights reserved.
+                    </div>
+                    <div class="mt-2 text-xs text-slate-500">
+                        <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
+                        <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
+                        <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <div id="screen-win" class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center text-center p-8 hidden animate-fade-in">
+            <div class="mb-6 animate-bounce">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="#FACC15" stroke="#EAB308" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-[0_0_30px_rgba(250,204,21,0.8)]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <p class="text-2xl text-green-300 mb-4">聖誕樹好漂亮！</p>
+            <h2 class="text-5xl font-bold text-white mb-8">聖誕快樂！</h2>
+            <button id="btn-replay" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-16 rounded-full text-lg shadow-xl flex items-center gap-3 transition-transform hover:scale-105 mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                再玩一次
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            </button>
+            <footer class="text-center text-sm text-slate-400">
+                <div class="mt-2 text-xs text-slate-500">
+                    © 2025 Christina Yu. All rights reserved.
+                </div>
+                <div class="mt-2 text-xs text-slate-500">
+                    <a href="mailto:mamahowma@gmail.com" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-envelope fa-xl fa-fw"></i></a>　
+                    <a href="https://www.facebook.com/mamahowma" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-brands fa-facebook fa-xl fa-fw"></i></a>　
+                    <a href="https://portaly.cc/mamahowma/support" target="_blank" class="hover:text-slate-300 transition-colors"><i class="fa-solid fa-mug-hot fa-xl fa-fw"></i></a>
+                </div>
+            </footer>
+        </div>
+
+    </div> <script>
         const state = { screen: 'menu', level: null, questions: [], answers: [], soundEnabled: true, dragItem: null, dragGhost: null, musicPlaying: false };
         const colorPalette = [
             { name: 'red', bg: 'bg-gradient-to-br from-red-500 to-red-700 border-red-400', lit: 'bg-gradient-to-br from-red-400 to-red-600 shadow-[0_0_20px_rgba(248,113,113,0.9)]' },
